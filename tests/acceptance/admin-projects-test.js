@@ -35,10 +35,11 @@ test('An admin can view a list of projects', function(assert) {
 
   let user = server.create('user', { admin: true, id: 1 });
 
-  let unapprovedProjects = server.createList('project', 2, { approved: false });
+  let unapprovedProject = server.create('project', { approved: false });
+  let projectPendingApproval = server.create('project', { approved: false, approvalRequested: true });
   let approvedProject = server.create('project', { approved: true });
 
-  [...unapprovedProjects, approvedProject]
+  [unapprovedProject, projectPendingApproval, approvedProject]
     .map(({ organization }) => organization)
     .forEach((organization) => server.create('slugged-route', { organization }));
 
@@ -52,15 +53,16 @@ test('An admin can view a list of projects', function(assert) {
 
     assert.equal(page.items().count, 3, 'There are 3 rows.');
 
-    [...unapprovedProjects, approvedProject].forEach((project, index) => {
+    [unapprovedProject, projectPendingApproval, approvedProject].forEach((project, index) => {
       assert.equal(page.items(index).title.text, project.title, 'Project title is rendered.');
       assert.equal(page.items(index).icon.src, project.iconThumbUrl, 'Project icon is rendered.');
     });
 
-    unapprovedProjects.forEach((project, index) => {
-      assert.equal(page.items(index).approvalStatus.text, 'Pending approval', 'Correct status is rendered for unapproved project.');
-      assert.ok(page.items(index).actions.approve.isVisible, 'Approve button is rendered for unapproved project.');
-    });
+    assert.equal(page.items(0).approvalStatus.text, 'Newly created', 'Correct status is rendered for newly created project.');
+    assert.notOk(page.items(0).actions.approve.isVisible, 'Approve button is not rendered for newly created project.');
+
+    assert.equal(page.items(1).approvalStatus.text, 'Pending approval', 'Correct status is rendered for project pending approval.');
+    assert.ok(page.items(1).actions.approve.isVisible, 'Approve button is rendered for project pending approval.');
 
     assert.equal(page.items(2).approvalStatus.text, 'Approved', 'Correct status is rendered for approved project.');
     assert.notOk(page.items(2).actions.approve.isVisible, 'Approve button is not rendered for approved project');
@@ -71,7 +73,7 @@ test('An admin can approve a project', function(assert) {
   assert.expect(2);
 
   let user = server.create('user', { admin: true, id: 1 });
-  let unapprovedProject = server.create('project', { approved: false });
+  let unapprovedProject = server.create('project', { approved: false, approvalRequested: true });
 
   authenticateSession(this.application, { user_id: user.id });
 
@@ -91,7 +93,7 @@ test('A flash error renders when project approval fails', function(assert) {
   assert.expect(1);
 
   let user = server.create('user', { admin: true, id: 1 });
-  let project = server.create('project', { approved: false });
+  let project = server.create('project', { approved: false, approvalRequested: true });
 
   authenticateSession(this.application, { user_id: user.id });
 

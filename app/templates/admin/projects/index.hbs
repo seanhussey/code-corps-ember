@@ -35,14 +35,16 @@
           <span class="log-data--success">
             {{fa-icon "check-circle"}} Approved
           </span>
-        {{else}}
+        {{else if project.approvalRequested}}
           {{fa-icon "question-circle"}} Pending approval
+        {{else}}
+          {{fa-icon "asterisk"}} Newly created
         {{/if}}
       </span>
       <span data-test-actions class="log-cell log-cell--shrink">
-        {{#unless project.approved}}
+        {{#if project.approvalRequested}}
           <button {{action approve project}} class="default small">Approve</button>
-        {{/unless}}
+        {{/if}}
       </span>
     </div>
   {{/each}}
